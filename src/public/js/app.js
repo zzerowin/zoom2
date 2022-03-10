@@ -125,21 +125,40 @@ socket.on("welcome", async () => {
 
 // #파이어 폭스
 socket.on("offer", async (offer) => {
+  console.log("offer 받음 ");
   await myPeerConnection.setRemoteDescription(offer);
   const answer = await myPeerConnection.createAnswer();
   await myPeerConnection.setLocalDescription(answer);
   socket.emit("answer", answer, roomName);
+  console.log("answer 전송");
 });
-
 
 socket.on("answer", (answer) => {
+  console.log("answer 받음");
   myPeerConnection.setRemoteDescription(answer);
 });
+
+socket.on("ice", (ice) => {
+  console.log("candidate 받음");
+  myPeerConnection.addIceCandidate(ice);
+})
 
 // RTC code
 function makeConnection() {
   myPeerConnection = new RTCPeerConnection();
+  myPeerConnection.addEventListener("icecandidate", handleIce);
+  myPeerConnection.addEventListener("addstream", handleAddStream);
   myStream
     .getTracks()
     .forEach((track) => myPeerConnection.addTrack(track, myStream));
+}
+
+function handleIce(data) {
+  console.log("cadidate 전송")
+  socket.emit("ice", data.candidate, roomName);
+}
+
+function handleAddStream(data) {
+  const peerFace = document.getElementById("peerFace");
+  peerFace.srcObject = data.stream
 }
